@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+  "dev": "nodemon --exec ts-node src/index.ts",
+  "build": "tsc",
+  "start": "node dist/index.js"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "apollo-server-express": "^3.13.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "graphql": "^16.13.2",
+    "mongoose": "^9.5.0",
+    "zod": "^4.3.6"
+  }
+}
