@@ -18,7 +18,7 @@ async function startServer(): Promise<void> {
     cors({
       origin: [
         "http://localhost:5173",
-        "https://dynamic-form-builder-sigma-lac.vercel.app/"
+        "https://dynamic-form-builder-sigma-lac.vercel.app"
       ],
       credentials: true,
     })
