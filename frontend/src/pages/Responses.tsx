@@ -1,12 +1,11 @@
 import { FC } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
 import { GET_FORM_RESPONSES } from '../graphql/queries';
 import './Responses.css';
 
 const Responses: FC = () => {
   const { formId } = useParams<{ formId: string }>();
-  const navigate = useNavigate();
 
   const { loading, error, data } = useQuery(GET_FORM_RESPONSES, {
     variables: { formId },
