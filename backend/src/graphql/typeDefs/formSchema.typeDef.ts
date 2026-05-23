@@ -138,6 +138,8 @@ const formSchemaTypeDef = gql`
   input FormMetaInput {
     title: String!
     description: String
+    version: Int
+    status: String
     createdBy: String!
     tags: [String]
   }

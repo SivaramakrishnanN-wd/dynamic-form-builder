@@ -1,0 +1,35 @@
+.renderer-wrap { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
+.form-preview {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 32px;
+}
+.form-title { font-family: var(--font-head); font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+.form-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+
+.progress-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 28px; }
+.progress-bar { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--blue), var(--cyan)); transition: width 0.4s; }
+
+.form-field { margin-bottom: 20px; }
+.field-lbl { font-size: 12px; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.field-req { color: var(--red); font-size: 14px; }
+.field-help { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+.finput {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--text);
+  font-family: var(--font-body); outline: none; transition: all 0.2s;
+}
+.finput:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,128,237,0.1); }
+.finput::placeholder { color: var(--text-muted); }
+select.finput { cursor: pointer; }
+textarea.finput { resize: vertical; min-height: 90px; }
+
+.form-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+.schema-panel { display: flex; flex-direction: column; gap: 14px; }
+.json-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.json-head { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.json-body { padding: 14px 16px; overflow: auto; max-height: 400px; font-family: var(--font-mono); font-size: 11px; line-height: 1.5; color: var(--text-dim); }
+.json-body pre { white-space: pre-wrap; word-break: break-all; margin: 0; }

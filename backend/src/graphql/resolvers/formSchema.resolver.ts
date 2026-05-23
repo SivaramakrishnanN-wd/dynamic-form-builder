@@ -64,7 +64,8 @@ const formSchemaResolver = {
           {
             ...input,
             meta: {
-              ...existing.meta.toObject?.() ?? existing.meta,
+              ...existing.toObject().meta,
+
               ...input.meta,
               version: newVersion,
               updatedAt: new Date(),

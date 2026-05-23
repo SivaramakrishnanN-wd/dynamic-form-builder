@@ -1,0 +1,9 @@
+.responses-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.resp-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.resp-stat-num { font-family: var(--font-head); font-size: 22px; font-weight: 800; color: var(--text); }
+.resp-stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+.answer-modal { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 14px; }
+.ans-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.ans-field { font-size: 12px; color: var(--text-muted); }
+.ans-val { font-size: 12px; color: var(--text); font-weight: 500; }

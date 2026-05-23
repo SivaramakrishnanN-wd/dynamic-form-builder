@@ -45,12 +45,12 @@ const formResponseTypeDef = gql`
 
   # ─── Queries & Mutations ──────────────────────────────
 
-  type Query {
+  extend type Query {
     getFormResponses(formId: String!): [FormResponse!]!
     getResponseById(responseId: String!): FormResponse
   }
 
-  type Mutation {
+  extend type Mutation {
     submitFormResponse(input: SubmitFormResponseInput!): SubmitFormResponseResult!
     deleteFormResponse(responseId: String!): String!
   }
