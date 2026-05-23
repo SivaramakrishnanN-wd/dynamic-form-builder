@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db";
 import { typeDefs, resolvers } from "./graphql";
 import { errorHandler } from "./middleware/errorHandler";
+import cors from "cors";
 
 dotenv.config();
 
@@ -13,6 +14,15 @@ async function startServer(): Promise<void> {
 
   // 2 — Create Express app
   const app = express();
+  app.use(
+    cors({
+      origin: [
+        "http://localhost:5173",
+        "https://your-frontend.vercel.app"
+      ],
+      credentials: true,
+    })
+  );
   app.use(express.json());
 
   // 3 — Create Apollo Server
@@ -26,6 +36,7 @@ async function startServer(): Promise<void> {
   });
 
   await server.start();
+
 
   // 4 — Apply Apollo middleware to Express
   // Cast required because apollo-server-express@3 types expect Express 4
