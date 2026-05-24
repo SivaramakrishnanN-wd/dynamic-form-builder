@@ -1,10 +1,24 @@
-.app { display: flex; height: 100vh; }
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.content { flex: 1; overflow: auto; padding: 24px; }
+.app { display: flex; min-height: 100vh; min-width: 0; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.content { flex: 1; overflow: auto; padding: 24px; min-height: 0; }
+.sidebar-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; z-index: 15; }
+.sidebar-backdrop.active { opacity: 1; visibility: visible; }
 
 /* Page container shared across all pages */
 .page { animation: fadeIn 0.2s ease; }
 
-.page-header { margin-bottom: 24px; }
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 24px;
+}
 .page-title { font-family: var(--font-head); font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
 .page-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+@media (max-width: 900px) {
+  .app { flex-direction: column; }
+  .content { padding: 16px; }
+}

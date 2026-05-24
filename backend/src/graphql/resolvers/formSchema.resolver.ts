@@ -1,5 +1,17 @@
 import FormSchema from "../../models/FormSchema.model";
 
+const optionFieldTypes = new Set(["select", "radio", "checkbox_group"]);
+
+const normalizeFieldInput = (field: any) => ({
+  ...field,
+  options: optionFieldTypes.has(field.type) ? field.options ?? [] : field.options,
+});
+
+const normalizeSchemaInput = (input: any) => ({
+  ...input,
+  fields: (input.fields ?? []).map(normalizeFieldInput),
+});
+
 const formSchemaResolver = {
   Query: {
     // Fetch single form schema by formId
@@ -31,10 +43,11 @@ const formSchemaResolver = {
         const existing = await FormSchema.findOne({ formId: input.formId });
         if (existing) throw new Error(`Form schema with id "${input.formId}" already exists`);
 
+        const normalizedInput = normalizeSchemaInput(input);
         const schema = new FormSchema({
-          ...input,
+          ...normalizedInput,
           meta: {
-            ...input.meta,
+            ...normalizedInput.meta,
             version: 1,
             status: "active",
           },
@@ -58,15 +71,15 @@ const formSchemaResolver = {
 
         // Increment version on every update
         const newVersion = existing.meta.version + 1;
+        const normalizedInput = input.fields ? normalizeSchemaInput(input) : input;
 
         const updated = await FormSchema.findOneAndUpdate(
           { formId },
           {
-            ...input,
+            ...normalizedInput,
             meta: {
               ...existing.toObject().meta,
-
-              ...input.meta,
+              ...normalizedInput.meta,
               version: newVersion,
               updatedAt: new Date(),
             },

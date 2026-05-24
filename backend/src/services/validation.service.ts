@@ -5,6 +5,28 @@ export interface FieldError {
   message: string;
 }
 
+function normalizeAnswerValue(field: IField, value: any): any {
+  if (field.type === "checkbox_group") {
+    if (Array.isArray(value)) return value;
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        // ignore parse errors and fall back to string form
+      }
+    }
+    return [];
+  }
+
+  if (field.type === "toggle") {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") return value === "true";
+  }
+
+  return value;
+}
+
 export function validateFormResponse(
   fields: IField[],
   answers: { fieldId: string; value: any }[]
@@ -15,7 +37,7 @@ export function validateFormResponse(
   for (const field of fields) {
     if (field.visibility === "hidden") continue;
 
-    const value = answerMap.get(field.fieldId);
+    const value = normalizeAnswerValue(field, answerMap.get(field.fieldId));
     const v = field.validation;
     if (!v) continue;
 
@@ -111,6 +133,19 @@ export function validateFormResponse(
         break;
       }
 
+      case "select":
+      case "radio": {
+        const selectedValue = String(value);
+        if (field.options?.length && !field.options.some((opt) => opt.value === selectedValue)) {
+          errors.push({
+            fieldId: field.fieldId,
+            message:
+              v.customMessage ?? `${field.label} contains an invalid selection`,
+          });
+        }
+        break;
+      }
+
       case "checkbox_group": {
         const selected: string[] = Array.isArray(value) ? value : [];
         if (v.minSelect !== undefined && selected.length < v.minSelect) {
@@ -128,6 +163,18 @@ export function validateFormResponse(
               v.customMessage ??
               `${field.label}: select at most ${v.maxSelect} option(s)`,
           });
+        }
+        if (field.options?.length) {
+          const invalidChoice = selected.some(
+            (choice) => !field.options!.some((opt) => opt.value === choice)
+          );
+          if (invalidChoice) {
+            errors.push({
+              fieldId: field.fieldId,
+              message:
+                v.customMessage ?? `${field.label} contains invalid selections`,
+            });
+          }
         }
         break;
       }

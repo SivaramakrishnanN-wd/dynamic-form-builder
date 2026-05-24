@@ -2,6 +2,28 @@ import { IField, ICondition, IConditionRule } from "../models/FormSchema.model";
 
 type Answer = { fieldId: string; value: any };
 
+function normalizeAnswerForField(field: IField, value: any): any {
+  if (field.type === "checkbox_group") {
+    if (Array.isArray(value)) return value;
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        // ignore invalid JSON and leave string form
+      }
+    }
+    return [];
+  }
+
+  if (field.type === "toggle") {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") return value === "true";
+  }
+
+  return value;
+}
+
 // ── Single rule evaluator ───────────────────────────────────────────────────
 function evaluateRule(
   rule: IConditionRule,
@@ -82,7 +104,13 @@ export function stripHiddenFields(
   fields: IField[],
   answers: Answer[]
 ): Answer[] {
-  const answerMap = new Map(answers.map((a) => [a.fieldId, a.value]));
+  const fieldMap = new Map(fields.map((field) => [field.fieldId, field]));
+  const answerMap = new Map(
+    answers.map((a) => {
+      const field = fieldMap.get(a.fieldId);
+      return [a.fieldId, field ? normalizeAnswerForField(field, a.value) : a.value];
+    })
+  );
 
   const visibilityMap = new Map<string, boolean>();
   for (const field of fields) {

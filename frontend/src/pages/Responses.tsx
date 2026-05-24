@@ -43,27 +43,29 @@ const Responses: FC = () => {
       </div>
 
       <div className="card">
-        <div className="card-header">
+        <div className="card-header card-header-responsive">
           <span className="card-title">All Responses</span>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Response ID</th><th>User</th><th>Submitted</th><th>Status</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {responses.map((resp: any) => (
-              <tr key={resp.id}>
-                <td><span className="version-chip">{resp.id.slice(-6).toUpperCase()}</span></td>
-                <td><div className="td-main">{resp.submittedBy}</div></td>
-                <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{new Date(parseInt(resp.submittedAt)).toLocaleDateString()}</td>
-                <td><span className={`badge ${resp.status === 'submitted' ? 'badge-active' : 'badge-inactive'}`}>{resp.status}</span></td>
-                <td><button className="action-btn btn-ghost">View</button></td>
+        <div className="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Response ID</th><th>User</th><th>Submitted</th><th>Status</th><th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {responses.map((resp: any) => (
+                <tr key={resp.id}>
+                  <td data-label="Response ID"><span className="version-chip">{resp.id.slice(-6).toUpperCase()}</span></td>
+                  <td data-label="User"><div className="td-main">{resp.submittedBy}</div></td>
+                  <td data-label="Submitted" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{new Date(parseInt(resp.submittedAt)).toLocaleDateString()}</td>
+                  <td data-label="Status"><span className={`badge ${resp.status === 'submitted' ? 'badge-active' : 'badge-inactive'}`}>{resp.status}</span></td>
+                  <td data-label="Actions"><button className="action-btn btn-ghost">View</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {responses.length === 0 && (
           <div className="empty">
             <div className="empty-icon">◫</div>

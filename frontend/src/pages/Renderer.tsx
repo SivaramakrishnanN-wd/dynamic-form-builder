@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_FORM_SCHEMA } from '../graphql/queries';
 import { SUBMIT_FORM_RESPONSE } from '../graphql/mutations';
+import FieldRenderer from '../components/fields/FieldRenderer';
 import './Renderer.css';
 
 const Renderer: FC = () => {
@@ -20,10 +21,28 @@ const Renderer: FC = () => {
 
   const form = data?.getFormSchema;
 
-  // Simple condition evaluation
+  const evaluateRule = (rule: any, answers: Record<string, any>) => {
+    const val = answers[rule.fieldId];
+    switch (rule.operator) {
+      case 'equals': return val === rule.value;
+      case 'notEquals': return val !== rule.value;
+      case 'greaterThan': return parseFloat(val) > parseFloat(rule.value);
+      case 'lessThan': return parseFloat(val) < parseFloat(rule.value);
+      case 'contains': return typeof val === 'string' && val.includes(rule.value);
+      case 'isNotEmpty': return val !== undefined && val !== null && val !== '';
+      case 'isEmpty': return val === undefined || val === null || val === '';
+      default: return false;
+    }
+  };
+
+  const evaluateCondition = (condition: any, answers: Record<string, any>) => {
+    const results = condition.rules.map((rule: any) => evaluateRule(rule, answers));
+    return condition.logic === 'AND' ? results.every(Boolean) : results.some(Boolean);
+  };
+
   useEffect(() => {
     if (!form) return;
-    
+
     const newVisible = new Set<string>();
     form.fields.forEach((field: any) => {
       if (!field.conditions || field.conditions.length === 0) {
@@ -31,36 +50,41 @@ const Renderer: FC = () => {
         return;
       }
 
-      // Check each condition
-      const isVisible = field.conditions.some((cond: any) => {
-        return cond.rules.every((rule: any) => {
-          const val = answers[rule.fieldId];
-          switch (rule.operator) {
-            case 'equals': return val === rule.value;
-            case 'notEquals': return val !== rule.value;
-            case 'greaterThan': return parseFloat(val) > parseFloat(rule.value);
-            case 'lessThan': return parseFloat(val) < parseFloat(rule.value);
-            case 'contains': return val?.includes(rule.value);
-            case 'isNotEmpty': return !!val;
-            case 'isEmpty': return !val;
-            default: return false;
-          }
-        });
+      const shouldShow = field.conditions.some((condition: any) => {
+        const match = evaluateCondition(condition, answers);
+        return condition.action === 'show' ? match : !match;
       });
 
-      if (isVisible) newVisible.add(field.fieldId);
+      if (shouldShow) newVisible.add(field.fieldId);
     });
 
     setVisibleFields(newVisible);
   }, [answers, form]);
+
+  const serializeAnswer = (field: any, value: any) => {
+    if (field.type === 'checkbox_group') {
+      return JSON.stringify(Array.isArray(value) ? value : []);
+    }
+    if (field.type === 'toggle') {
+      return String(Boolean(value));
+    }
+    if (field.type === 'file') {
+      return value?.name ? String(value.name) : '';
+    }
+    return String(value ?? '');
+  };
 
   const handleSubmit = async () => {
     try {
       const input = {
         formId,
         submittedBy: 'Public User',
-        answers: Object.entries(answers).map(([fieldId, value]) => ({ fieldId, value: String(value) }))
+        answers: form.fields.map((field: any) => ({
+          fieldId: field.fieldId,
+          value: serializeAnswer(field, answers[field.fieldId]),
+        })),
       };
+
       const { data } = await submitForm({ variables: { input } });
       if (data.submitFormResponse.success) {
         alert('Form submitted successfully!');
@@ -97,40 +121,30 @@ const Renderer: FC = () => {
             {form.fields.map((field: any) => {
               if (!visibleFields.has(field.fieldId)) return null;
 
+              const fieldNode = (
+                <FieldRenderer
+                  field={field}
+                  value={answers[field.fieldId]}
+                  onChange={(nextValue) => setAnswers({ ...answers, [field.fieldId]: nextValue })}
+                />
+              );
+
+              if (field.type === 'hidden') {
+                return <div key={field.fieldId}>{fieldNode}</div>;
+              }
+
+              const showLabel = field.type !== 'section_header';
+
               return (
                 <div key={field.fieldId} className="form-field">
-                  <label className="field-lbl">
-                    {field.label} {field.validation?.required && <span className="field-req">*</span>}
-                    {field.conditions?.length > 0 && <span style={{ fontSize: '10px', color: 'var(--amber)', marginLeft: '8px' }}>◉ Conditional</span>}
-                  </label>
-                  {field.type === 'textarea' ? (
-                    <textarea 
-                      className="finput" 
-                      placeholder={field.placeholder}
-                      value={answers[field.fieldId] || ''}
-                      onChange={(e) => setAnswers({ ...answers, [field.fieldId]: e.target.value })}
-                    />
-                  ) : field.type === 'select' ? (
-                    <select 
-                      className="finput"
-                      value={answers[field.fieldId] || ''}
-                      onChange={(e) => setAnswers({ ...answers, [field.fieldId]: e.target.value })}
-                    >
-                      <option value="">Select an option</option>
-                      {field.options?.map((opt: any) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input 
-                      className="finput" 
-                      type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : 'text'}
-                      placeholder={field.placeholder}
-                      value={answers[field.fieldId] || ''}
-                      onChange={(e) => setAnswers({ ...answers, [field.fieldId]: e.target.value })}
-                    />
+                  {showLabel && (
+                    <label className="field-lbl">
+                      {field.label} {field.validation?.required && <span className="field-req">*</span>}
+                      {field.conditions?.length > 0 && <span style={{ fontSize: '10px', color: 'var(--amber)', marginLeft: '8px' }}>◉ Conditional</span>}
+                    </label>
                   )}
-                  {field.helpText && <div className="field-help">{field.helpText}</div>}
+                  {fieldNode}
+                  {field.helpText && showLabel && <div className="field-help">{field.helpText}</div>}
                 </div>
               );
             })}

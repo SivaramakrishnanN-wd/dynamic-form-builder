@@ -2,10 +2,14 @@ import { FC } from 'react';
 import { NavLink } from 'react-router-dom';
 import './Sidebar.css';
 
-const Sidebar: FC = () => {
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+const Sidebar: FC<SidebarProps> = ({ open, onClose }) => {
   return (
-    // metaadmin123
-    <aside className="sidebar">
+    <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="logo">
         <div className="logo-icon">F</div>
         <div className="logo-text">
@@ -15,17 +19,15 @@ const Sidebar: FC = () => {
       </div>
       <nav className="nav">
         <div className="nav-section">Workspace</div>
-        <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-icon">⊞</span> Dashboard
           <span className="nav-badge">4</span>
         </NavLink>
-        <NavLink to="/builder" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/builder" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-icon">◈</span> Form Builder
         </NavLink>
       </nav>
-      <div className="sidebar-footer">
-       
-      </div>
+      <div className="sidebar-footer" />
     </aside>
   );
 };

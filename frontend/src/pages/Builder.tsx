@@ -1,8 +1,9 @@
-import { FC, useEffect } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_FORM_SCHEMA, LIST_FORM_SCHEMAS } from '../graphql/queries';
-import { UPDATE_FORM_SCHEMA, CREATE_FORM_SCHEMA } from '../graphql/mutations';
+import { UPDATE_FORM_SCHEMA, CREATE_FORM_SCHEMA, DELETE_FORM_SCHEMA } from '../graphql/mutations';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { 
   setCurrentSchema, 
@@ -25,6 +26,10 @@ const FIELD_TYPES: { type: FieldType; color: string }[] = [
   { type: 'checkbox_group', color: '#06b6d4' },
   { type: 'toggle', color: '#84cc16' },
   { type: 'date', color: '#a78bfa' },
+  { type: 'time', color: '#0ea5e9' },
+  { type: 'file', color: '#f43f5e' },
+  { type: 'section_header', color: '#9ca3af' },
+  { type: 'hidden', color: '#64748b' },
   { type: 'password', color: '#64748b' },
 ];
 
@@ -47,6 +52,12 @@ const Builder: FC = () => {
     refetchQueries: [{ query: LIST_FORM_SCHEMAS }],
   });
 
+  const [deleteSchema, { loading: deletingSchema, error: deleteSchemaError }] = useMutation(DELETE_FORM_SCHEMA, {
+    refetchQueries: [{ query: LIST_FORM_SCHEMAS }],
+    awaitRefetchQueries: true,
+  });
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   useEffect(() => {
     if (data?.getFormSchema) {
       dispatch(setCurrentSchema(data.getFormSchema));
@@ -62,6 +73,22 @@ const Builder: FC = () => {
     }
   }, [data, formId, dispatch]);
 
+  const createDefaultOptions = (type: FieldType) => {
+    if (type === 'select' || type === 'radio') {
+      return [
+        { label: 'Option 1', value: 'option_1' },
+        { label: 'Option 2', value: 'option_2' },
+      ];
+    }
+    if (type === 'checkbox_group') {
+      return [
+        { label: 'Option 1', value: 'option_1' },
+        { label: 'Option 2', value: 'option_2' },
+      ];
+    }
+    return undefined;
+  };
+
   const handleAddField = (type: FieldType) => {
     const newField: Field = {
       fieldId: `field_${Math.floor(Math.random() * 10000)}`,
@@ -70,9 +97,51 @@ const Builder: FC = () => {
       placeholder: `Enter ${type}...`,
       order: (currentSchema?.fields.length || 0) + 1,
       visibility: 'visible',
+      options: createDefaultOptions(type),
     };
     dispatch(addField(newField));
   };
+
+  const handleUpdateFieldOptions = (fieldId: string, updater: (options: any[]) => any[]) => {
+    const field = currentSchema?.fields.find((f) => f.fieldId === fieldId);
+    if (!field) return;
+    const nextOptions = updater(field.options ?? []);
+    dispatch(updateField({ fieldId, updates: { options: nextOptions } }));
+  };
+
+  const handleOptionChange = (fieldId: string, index: number, key: 'label' | 'value', nextValue: string) => {
+    handleUpdateFieldOptions(fieldId, (options) =>
+      options.map((option, idx) => idx === index ? { ...option, [key]: nextValue } : option)
+    );
+  };
+
+  const handleAddOption = (fieldId: string) => {
+    handleUpdateFieldOptions(fieldId, (options) => [
+      ...options,
+      { label: `Option ${options.length + 1}`, value: `option_${options.length + 1}` },
+    ]);
+  };
+
+  const handleRemoveOption = (fieldId: string, index: number) => {
+    handleUpdateFieldOptions(fieldId, (options) => options.filter((_, idx) => idx !== index));
+  };
+
+  const handleDeleteSchema = async () => {
+    if (!formId) return;
+
+    try {
+      await deleteSchema({ variables: { formId } });
+      dispatch(setCurrentSchema(null));
+      navigate('/');
+    } catch (err: any) {
+      alert(`Error deleting schema: ${err.message}`);
+    } finally {
+      setConfirmDelete(false);
+    }
+  };
+
+  const openDeleteConfirmation = () => setConfirmDelete(true);
+  const closeDeleteConfirmation = () => setConfirmDelete(false);
 
   const handleSave = async () => {
     if (!currentSchema) return;
@@ -126,10 +195,38 @@ const Builder: FC = () => {
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {formId && <button className="btn-outline" onClick={() => navigate(`/renderer/${formId}`)}>Preview Form</button>}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {formId && (
+            <>
+              <button className="btn-outline" onClick={() => navigate(`/renderer/${formId}`)}>Preview Form</button>
+              <button
+                className="btn-outline"
+                style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
+                disabled={deletingSchema}
+                onClick={openDeleteConfirmation}
+              >
+                Delete Form
+              </button>
+            </>
+          )}
           <button className="btn-solid" onClick={handleSave}>Save Schema</button>
         </div>
+        {deleteSchemaError && (
+          <div style={{ marginTop: '12px', color: 'var(--red)', fontSize: '12px' }}>
+            Delete failed: {deleteSchemaError.message}
+          </div>
+        )}
+
+        <ConfirmationModal
+          open={confirmDelete}
+          title="Delete form schema"
+          message="Delete this form schema? This action will archive the schema and remove it from the dashboard list."
+          confirmText="Delete"
+          cancelText="Cancel"
+          loading={deletingSchema}
+          onConfirm={handleDeleteSchema}
+          onCancel={closeDeleteConfirmation}
+        />
       </div>
 
       <div className="builder-layout">
@@ -237,6 +334,49 @@ const Builder: FC = () => {
                     onChange={(e) => dispatch(updateField({ fieldId: selectedField.fieldId, updates: { placeholder: e.target.value } }))}
                   />
                 </div>
+
+                {['select', 'radio', 'checkbox_group'].includes(selectedField.type) && (
+                  <div className="prop-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                    <span className="prop-label">Options</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {(selectedField.options ?? []).map((option, index) => (
+                        <div key={`${option.value}-${index}`} className="option-row">
+                          <input
+                            className="prop-input"
+                            value={option.label}
+                            placeholder={`Label ${index + 1}`}
+                            onChange={(e) => handleOptionChange(selectedField.fieldId, index, 'label', e.target.value)}
+                          />
+                          <input
+                            className="prop-input"
+                            value={option.value}
+                            placeholder={`Value ${index + 1}`}
+                            onChange={(e) => handleOptionChange(selectedField.fieldId, index, 'value', e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="btn-outline btn-small"
+                            onClick={() => handleRemoveOption(selectedField.fieldId, index)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      {(selectedField.options ?? []).length === 0 && (
+                        <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>No options configured yet.</div>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-solid"
+                        style={{ width: 'fit-content', fontSize: '12px' }}
+                        onClick={() => handleAddOption(selectedField.fieldId)}
+                      >
+                        Add option
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="prop-row">
                   <span className="prop-label">Required</span>
                   <div className="toggle-row">
